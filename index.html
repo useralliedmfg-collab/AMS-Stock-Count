@@ -60,9 +60,101 @@
     border: none !important;
 }
 
-/* ไม่ให้มีพื้นขาวรอบกล้อง */
+/* =================================
+   PREMIUM CAMERA SCANNER
+================================= */
+
+#reader {
+    position: relative !important;
+    width: 100% !important;
+    max-width: 420px !important;
+    height: 420px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 20px !important;
+    overflow: hidden !important;
+    background: #000 !important;
+}
+
+/* กล้องเต็มพื้นที่ */
+#reader video {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    object-fit: cover !important;
+    display: block !important;
+    border: none !important;
+}
+
+/* พื้นที่ Scan Region */
+#reader__scan_region {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* ซ่อน UI ที่ไม่จำเป็น */
+#reader__dashboard {
+    display: none !important;
+}
+
 #reader__scan_region img {
     display: none !important;
+}
+
+/* กรอบสแกน */
+#reader__scan_region::after {
+    content: "";
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    top: 18%;
+    bottom: 18%;
+
+    border: 2px solid rgba(255,255,255,0.9);
+    border-radius: 18px;
+
+    box-shadow:
+        0 0 0 9999px rgba(0,0,0,0.12);
+
+    pointer-events: none;
+}
+
+/* เส้น Scan */
+#reader__scan_region::before {
+    content: "";
+    position: absolute;
+
+    left: 14%;
+    right: 14%;
+    top: 18%;
+
+    height: 2px;
+
+    background: #38bdf8;
+
+    box-shadow:
+        0 0 8px #38bdf8,
+        0 0 16px #38bdf8;
+
+    animation: scanLine 2.2s ease-in-out infinite;
+
+    z-index: 10;
+}
+
+@keyframes scanLine {
+    0%, 100% {
+        top: 18%;
+    }
+
+    50% {
+        top: 82%;
+    }
 }
         
         /* Custom SweetAlert styles for mobile */
@@ -122,8 +214,13 @@
         <!-- VIEW 2: SCANNER -->
         <div id="view-scanner" class="hidden p-4 flex flex-col flex-1 h-full bg-gray-900">
             <div class="text-center mb-4">
-                <h2 class="text-white text-lg font-semibold tracking-wider">SCAN QR CODE / BARCODE</h2>
-                <p class="text-gray-400 text-sm">นำบาร์โค้ดมาให้อยู่ในกรอบเพื่อสแกน</p>
+                <h2 class="text-white text-lg font-semibold tracking-wide">
+    SCAN ITEM
+</h2>
+
+<p class="text-gray-300 text-sm">
+    วาง QR Code หรือ Barcode ให้อยู่ในกรอบ
+</p>
             </div>
 
             <!-- The element where the camera stream will be injected -->
