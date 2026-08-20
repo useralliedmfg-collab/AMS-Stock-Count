@@ -409,19 +409,25 @@
 
             document.getElementById('loading-overlay').classList.remove('hidden');
 
-            // Call Google Apps Script function
-            if (typeof google !== 'undefined' && google.script) {
-                google.script.run
-                    .withSuccessHandler(handleSaveSuccess)
-                    .withFailureHandler(handleSaveError)
-                    .saveToSheet(payload);
-            } else {
-                // Local testing fallback
-                setTimeout(() => {
-                    console.log("Mock Save Data:", payload);
-                    handleSaveSuccess({status: 'success'});
-                }, 1000);
-            }
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7CynfxDXv-NmuHit75sWIbVWEI1BWy43F13QzfSKbXypPBWM6xWrIDW2cXuKGAFZp/exec';
+
+fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+    },
+    body: new URLSearchParams({
+        data: JSON.stringify(payload)
+    })
+})
+.then(() => {
+    handleSaveSuccess({
+        status: 'success'
+    });
+})
+.catch((error) => {
+    handleSaveError(error);
+});
         }
 
         function handleSaveSuccess(response) {
