@@ -21,18 +21,48 @@
         }
         /* Style for the scanner container to ensure it fits well on mobile */
         #reader {
-    width: 100%;
-    max-width: 420px;
-    min-height: 420px;
-    border-radius: 16px;
-    overflow: hidden;
-    background: #000;
+    width: 100% !important;
+    max-width: 420px !important;
+    height: 420px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    background: transparent !important;
 }
 
+/* ลบกรอบ/เส้นที่ html5-qrcode สร้าง */
+#reader > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* กล้อง */
 #reader video {
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
+    max-width: none !important;
     object-fit: cover !important;
+    display: block !important;
+    border: none !important;
+}
+
+/* ลบเส้นกรอบของ scanner */
+#reader__scan_region {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* ไม่ให้มีพื้นขาวรอบกล้อง */
+#reader__scan_region img {
+    display: none !important;
 }
         
         /* Custom SweetAlert styles for mobile */
@@ -251,13 +281,9 @@
     html5QrCode = new Html5Qrcode("reader");
 
     const config = {
-        fps: 10,
-        qrbox: {
-            width: 250,
-            height: 150
-        },
-        aspectRatio: 1.0
-    };
+    fps: 10,
+    aspectRatio: 1.0
+};
 
     html5QrCode.start(
         { facingMode: "environment" },
@@ -306,7 +332,10 @@
                 const newCameraId = availableCameras[currentCameraIndex].id;
                 
                 html5QrCode.stop().then(() => {
-                    const config = { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 };
+                    const config = {
+    fps: 10,
+    aspectRatio: 1.0
+};
                     html5QrCode.start(newCameraId, config, onScanSuccess, onScanFailure);
                 });
             }
