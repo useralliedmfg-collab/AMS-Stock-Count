@@ -40,6 +40,29 @@
             font-family: 'Prompt', sans-serif !important;
             border-radius: 1rem !important;
         }
+        /* ==========================================
+   ANDROID INPUT FIX
+   ========================================== */
+
+#view-input {
+    position: relative;
+    min-height: 0;
+}
+
+/* ป้องกันหน้าโดนดัน/เลื่อนแปลก ๆ ตอน Keyboard เปิด */
+#actual-qty {
+    position: relative;
+    z-index: 5;
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* ให้ปุ่มอยู่เหนือ element อื่น */
+#btn-submit {
+    position: relative;
+    z-index: 10;
+    touch-action: manipulation;
+}
     </style>
 </head>
 <body class="text-gray-800 antialiased min-h-screen flex flex-col items-center">
@@ -144,7 +167,12 @@
                  <button onclick="cancelInput()" class="w-1/3 bg-gray-200 text-gray-700 font-semibold rounded-xl p-4 text-lg active:bg-gray-300 transition-colors">
                     ยกเลิก
                 </button>
-                <button onclick="submitCount()" id="btn-submit" class="w-2/3 bg-green-600 text-white font-semibold rounded-xl p-4 text-xl shadow-lg active:bg-green-700 transition-colors flex justify-center items-center gap-2">
+                <button
+    type="button"
+    onclick="submitCount()"
+    id="btn-submit"
+    class="w-2/3 bg-green-600 text-white font-semibold rounded-xl p-4 text-xl shadow-lg active:bg-green-700 transition-colors flex justify-center items-center gap-2"
+>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
@@ -376,9 +404,8 @@
             showView('view-input');
             
             // Auto focus input on mobile (might require user interaction depending on OS, but we try)
-            setTimeout(() => {
-                document.getElementById('actual-qty').focus();
-            }, 300);
+           // ไม่ Auto Focus
+// ให้ผู้ใช้แตะช่องจำนวนเอง
         }
 
         // --- STREAMING_CHUNK:Data Submission to Google Sheets ---
@@ -387,48 +414,53 @@
             initScanner();
         }
 
-        function submitCount() {
-            const actualQty = document.getElementById('actual-qty').value;
-            
-            if (actualQty === "" || parseInt(actualQty) < 0) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'กรุณาระบุจำนวน',
-                    text: 'จำนวนที่ตรวจนับต้องเป็นตัวเลขที่มากกว่าหรือเท่ากับ 0',
-                    confirmButtonColor: '#3085d6'
-                });
-                return;
-            }
+function submitCount() {
 
-            // Combine session data and scan data
-            const payload = {
-                ...currentSession,
-                ...currentScanData,
-                actualQty: actualQty
-            };
+    const input = document.getElementById('actual-qty');
+    const actualQty = input.value;
 
-            document.getElementById('loading-overlay').classList.remove('hidden');
+    // ปิด Keyboard บน Android ก่อน
+    input.blur();
 
-            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7CynfxDXv-NmuHit75sWIbVWEI1BWy43F13QzfSKbXypPBWM6xWrIDW2cXuKGAFZp/exec';
+    if (actualQty === "" || parseInt(actualQty) < 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'กรุณาระบุจำนวน',
+            text: 'จำนวนที่ตรวจนับต้องเป็นตัวเลขที่มากกว่าหรือเท่ากับ 0',
+            confirmButtonColor: '#3085d6'
+        });
+        return;
+    }
 
-fetch(SCRIPT_URL, {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-    },
-    body: new URLSearchParams({
-        data: JSON.stringify(payload)
+    // Combine session data and scan data
+    const payload = {
+        ...currentSession,
+        ...currentScanData,
+        actualQty: actualQty
+    };
+
+    document.getElementById('loading-overlay').classList.remove('hidden');
+
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7CynfxDXv-NmuHit75sWIbVWEI1BWy43F13QzfSKbXypPBWM6xWrIDW2cXuKGAFZp/exec';
+
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+        },
+        body: new URLSearchParams({
+            data: JSON.stringify(payload)
+        })
     })
-})
-.then(() => {
-    handleSaveSuccess({
-        status: 'success'
+    .then(() => {
+        handleSaveSuccess({
+            status: 'success'
+        });
+    })
+    .catch((error) => {
+        handleSaveError(error);
     });
-})
-.catch((error) => {
-    handleSaveError(error);
-});
-        }
+}
 
         function handleSaveSuccess(response) {
             document.getElementById('loading-overlay').classList.add('hidden');
