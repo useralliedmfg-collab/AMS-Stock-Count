@@ -98,7 +98,14 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-600 mb-1">ชื่อผู้รับผิดชอบ (Responsible Person)</label>
-                <input type="text" id="responsible-name" placeholder="ระบุชื่อผู้ตรวจ" class="w-full border border-gray-300 rounded-lg p-3 text-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                <input
+    type="text"
+    id="responsible-name"
+    placeholder="ระบุชื่อผู้ตรวจ"
+    enterkeyhint="done"
+    onkeydown="if(event.key === 'Enter') { event.preventDefault(); goToScanner(); }"
+    class="w-full border border-gray-300 rounded-lg p-3 text-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+>
             </div>
 
             <div class="flex-1"></div> <!-- Spacer -->
