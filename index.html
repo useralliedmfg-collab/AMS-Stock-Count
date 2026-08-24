@@ -303,18 +303,34 @@
                 html5QrCode = new Html5Qrcode("reader");
             }
 
-            const cameraConfig = { facingMode: "environment" };
-            const config = {
-                fps: 10,
-                qrbox: { width: 340, height: 220 },
-                aspectRatio: 1.0,
-                useBarCodeDetectorIfSupported: true,
-                videoConstraints: {
-                    width: { min: 1280, ideal: 1920 },
-                    height: { min: 720, ideal: 1080 },
-                    facingMode: "environment"
-                }
-            };
+            const cameraConfig = {
+    facingMode: "environment"
+};
+
+const config = {
+    fps: 10,
+
+    qrbox: {
+        width: 340,
+        height: 220
+    },
+
+    aspectRatio: 1.0,
+
+    useBarCodeDetectorIfSupported: true,
+
+    videoConstraints: {
+        facingMode: {
+            ideal: "environment"
+        },
+        width: {
+            ideal: 1920
+        },
+        height: {
+            ideal: 1080
+        }
+    }
+};
 
             html5QrCode.start(
                 cameraConfig,
@@ -328,20 +344,183 @@
                 function(errorMessage) {
                     // ไม่ต้องทำอะไร
                 }
-            ).then(() => {
-                console.log("CAMERA OK");
-                try {
-                    const track = html5QrCode.getRunningTrack();
-                    if (track) {
-                        const capabilities = track.getCapabilities();
-                        if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-                            track.applyConstraints({
-                                advanced: [{ focusMode: 'continuous' }]
-                            }).catch(e => console.log("Focus constraints error", e));
+            }).then(() => {
+    console.log("CAMERA OK");
+
+    try {
+        const track = html5QrCode.getRunningTrack();
+
+        if (!track) {
+            console.log("ไม่พบ Camera Track");
+            return;
+        }
+
+        const capabilities = track.getCapabilities();
+        const settings = track.getSettings();
+
+        console.log("Camera capabilities:", capabilities);
+        console.log("Camera settings:", settings);
+
+        // ==========================================
+        // 1. AUTO FOCUS
+        // ==========================================
+        if (capabilities.focusMode) {
+
+            console.log(
+                "Focus modes:",
+                capabilities.focusMode
+            );
+
+            // ให้กล้องโฟกัสต่อเนื่องเหมือนกล้องมือถือ
+            if (capabilities.focusMode.includes("continuous")) {
+
+                track.applyConstraints({
+                    advanced: [
+                        {
+                            focusMode: "continuous"
                         }
-                    }
-                } catch (err) { console.log("Auto focus not supported", err); }
-            }).catch((error) => {
+                    ]
+                }).then(() => {
+
+                    console.log("AUTO FOCUS: CONTINUOUS ON");
+
+                }).catch(error => {
+
+                    console.log(
+                        "Continuous focus ไม่รองรับ:",
+                        error
+                    );
+
+                });
+
+            }
+
+            // ถ้าไม่มี continuous
+            else if (capabilities.focusMode.includes("single-shot")) {
+
+                track.applyConstraints({
+                    advanced: [
+                        {
+                            focusMode: "single-shot"
+                        }
+                    ]
+                }).then(() => {
+
+                    console.log("AUTO FOCUS: SINGLE SHOT");
+
+                }).catch(error => {
+
+                    console.log(
+                        "Single-shot focus ไม่รองรับ:",
+                        error
+                    );
+
+                });
+            }
+        }
+
+        // ==========================================
+        // 2. AUTO ZOOM
+        // ==========================================
+        if (
+            capabilities.zoom &&
+            capabilities.zoom.max &&
+            capabilities.zoom.max > 1
+        ) {
+
+            const currentZoom = settings.zoom || 1;
+
+            // ไม่ซูมแรงเกินไป
+            const targetZoom = Math.min(
+                1.5,
+                capabilities.zoom.max
+            );
+
+            if (targetZoom > currentZoom) {
+
+                track.applyConstraints({
+                    advanced: [
+                        {
+                            zoom: targetZoom
+                        }
+                    ]
+                }).then(() => {
+
+                    console.log(
+                        "AUTO ZOOM:",
+                        targetZoom
+                    );
+
+                }).catch(error => {
+
+                    console.log(
+                        "Zoom ไม่รองรับ:",
+                        error
+                    );
+
+                });
+            }
+        }
+
+        // ==========================================
+        // 3. แตะหน้าจอ = กระตุ้น Auto Focus ใหม่
+        // ==========================================
+        setTimeout(() => {
+
+            const videoElem =
+                document.querySelector("#reader video");
+
+            if (!videoElem) {
+                console.log("ไม่พบ video element");
+                return;
+            }
+
+            videoElem.addEventListener("click", () => {
+
+                console.log("USER TAP → REFRESH FOCUS");
+
+                if (
+                    capabilities.focusMode &&
+                    capabilities.focusMode.includes("continuous")
+                ) {
+
+                    track.applyConstraints({
+                        advanced: [
+                            {
+                                focusMode: "continuous"
+                            }
+                        ]
+                    }).then(() => {
+
+                        console.log(
+                            "FOCUS REFRESHED"
+                        );
+
+                    }).catch(error => {
+
+                        console.log(
+                            "Focus refresh error:",
+                            error
+                        );
+
+                    });
+
+                }
+
+            });
+
+        }, 800);
+
+    } catch (err) {
+
+        console.log(
+            "Camera advanced features not supported:",
+            err
+        );
+
+    }
+
+}).catch((error) => {
                 console.error("CAMERA ERROR:", error);
                 errorBox.classList.remove("hidden");
                 
