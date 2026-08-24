@@ -27,12 +27,118 @@
     border-radius: 16px;
     overflow: hidden;
     background: #000;
+    position: relative;
 }
 
 #reader video {
     width: 100% !important;
     height: 100% !important;
-    object-fit: contain !important;
+    object-fit: cover !important;
+}
+
+/* ซ่อน UI เดิมบางส่วนของ Html5Qrcode */
+#reader__dashboard_section_csr {
+    display: none !important;
+}
+
+#reader__dashboard_section_swaplink {
+    display: none !important;
+}
+
+/* กรอบสแกนของเรา */
+.scanner-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.scanner-frame {
+    width: 78%;
+    aspect-ratio: 1 / 1;
+    position: relative;
+}
+
+/* มุมกรอบ */
+.scanner-frame::before,
+.scanner-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 3px solid transparent;
+    border-radius: 18px;
+    pointer-events: none;
+}
+
+/* เส้นวิ่ง */
+.scanner-line {
+    position: absolute;
+    left: 5%;
+    right: 5%;
+    height: 3px;
+    top: 10%;
+    background: #22c55e;
+    box-shadow:
+        0 0 8px #22c55e,
+        0 0 18px #22c55e;
+    animation: scanLine 2s ease-in-out infinite;
+}
+
+@keyframes scanLine {
+    0% {
+        top: 10%;
+        opacity: 0.5;
+    }
+
+    50% {
+        top: 90%;
+        opacity: 1;
+    }
+
+    100% {
+        top: 10%;
+        opacity: 0.5;
+    }
+}
+
+/* มุมทั้ง 4 */
+.corner {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-color: #22c55e;
+    border-style: solid;
+}
+
+.corner-tl {
+    top: 0;
+    left: 0;
+    border-width: 4px 0 0 4px;
+    border-radius: 12px 0 0 0;
+}
+
+.corner-tr {
+    top: 0;
+    right: 0;
+    border-width: 4px 4px 0 0;
+    border-radius: 0 12px 0 0;
+}
+
+.corner-bl {
+    bottom: 0;
+    left: 0;
+    border-width: 0 0 4px 4px;
+    border-radius: 0 0 0 12px;
+}
+
+.corner-br {
+    bottom: 0;
+    right: 0;
+    border-width: 0 4px 4px 0;
+    border-radius: 0 0 12px 0;
 }
         
         /* Custom SweetAlert styles for mobile */
@@ -136,7 +242,24 @@
 
             <!-- The element where the camera stream will be injected -->
             <div class="flex-1 flex flex-col justify-center items-center w-full relative">
-                <div id="reader"></div>
+                <div id="reader">
+
+    <div class="scanner-overlay">
+
+        <div class="scanner-frame">
+
+            <div class="corner corner-tl"></div>
+            <div class="corner corner-tr"></div>
+            <div class="corner corner-bl"></div>
+            <div class="corner corner-br"></div>
+
+            <div class="scanner-line"></div>
+
+        </div>
+
+    </div>
+
+</div>
                 
                 <!-- Error Overlay (Hidden by default) -->
                 <div id="camera-error" class="hidden absolute inset-0 bg-black/80 flex flex-col items-center justify-center p-6 text-center z-20">
@@ -291,73 +414,380 @@
 
         function initScanner() {
 
-    const reader = document.getElementById("reader");
-    const errorBox = document.getElementById("camera-error");
+    const reader =
+        document.getElementById("reader");
+
+    const errorBox =
+        document.getElementById("camera-error");
 
     errorBox.classList.add("hidden");
 
-    // ล้างพื้นที่กล้องก่อน
+
+    // ==========================================
+    // CLEAR OLD SCANNER
+    // ==========================================
+
+    if (html5QrCode) {
+
+        try {
+            html5QrCode.stop();
+        } catch (e) {}
+
+        try {
+            html5QrCode.clear();
+        } catch (e) {}
+
+    }
+
+
+    // ==========================================
+    // SAVE SCANNER OVERLAY
+    // ==========================================
+
+    const overlay =
+        reader.querySelector(
+            ".scanner-overlay"
+        );
+
+
+    // ล้างเฉพาะ video/scanner เดิม
     reader.innerHTML = "";
 
-    // สร้าง scanner ใหม่
-    html5QrCode = new Html5Qrcode("reader");
+
+    // ใส่ overlay กลับ
+    if (overlay) {
+        reader.appendChild(overlay);
+    }
+
+
+    // ==========================================
+    // CREATE SCANNER
+    // ==========================================
+
+    html5QrCode =
+        new Html5Qrcode("reader");
+
+
+    // ==========================================
+    // SCANNER CONFIG
+    // ==========================================
 
     const config = {
-    fps: 15,
-    qrbox: {
-        width: 280,
-        height: 280
-    },
-    aspectRatio: 1.0,
-    experimentalFeatures: {
-        useBarCodeDetectorIfSupported: true
-    }
-};
+
+        // ความถี่ในการตรวจจับ
+        fps: 20,
+
+
+        // ⭐ พื้นที่ตรวจจับกว้าง
+        qrbox: function(
+            viewfinderWidth,
+            viewfinderHeight
+        ) {
+
+            const size =
+                Math.floor(
+                    Math.min(
+                        viewfinderWidth,
+                        viewfinderHeight
+                    ) * 0.85
+                );
+
+            return {
+
+                width: size,
+
+                height: size
+
+            };
+
+        },
+
+
+        // กล้องเป็นสัดส่วน 1:1
+        aspectRatio: 1.0,
+
+
+        // ใช้ Barcode Detector ถ้ามี
+        experimentalFeatures: {
+
+            useBarCodeDetectorIfSupported:
+                true
+
+        }
+
+    };
+
+
+    // ==========================================
+    // CAMERA CONFIG
+    // ==========================================
+
     const cameraConfig = {
-    facingMode: {
-        exact: "environment"
-    }
-};
 
-html5QrCode.start(
-    cameraConfig,
-    config,
+        facingMode: {
 
-    function(decodedText) {
+            ideal: "environment"
 
-            console.log("SCAN:", decodedText);
+        },
+
+        width: {
+
+            ideal: 1920
+
+        },
+
+        height: {
+
+            ideal: 1080
+
+        }
+
+    };
+
+
+    // ==========================================
+    // START CAMERA
+    // ==========================================
+
+    html5QrCode.start(
+
+        cameraConfig,
+
+        config,
+
+
+        // ======================================
+        // QR FOUND
+        // ======================================
+
+        function(decodedText) {
+
+            console.log(
+                "🎯 QR FOUND:",
+                decodedText
+            );
+
+
+            // ป้องกันการยิงซ้ำ
+            if (
+                window.isProcessingScan
+            ) {
+
+                return;
+
+            }
+
+
+            window.isProcessingScan =
+                true;
+
+
+            // ==================================
+            // STOP CAMERA
+            // ==================================
 
             html5QrCode.stop()
+
                 .then(() => {
+
                     html5QrCode.clear();
-                    processScannedData(decodedText);
+
+                    processScannedData(
+                        decodedText
+                    );
+
                 })
+
                 .catch(() => {
-                    processScannedData(decodedText);
+
+                    processScannedData(
+                        decodedText
+                    );
+
                 });
 
         },
 
+
+        // ======================================
+        // SCAN FAILURE
+        // ======================================
+
         function(errorMessage) {
-            // ไม่ต้องทำอะไร
+
+            // ไม่ต้องแสดง Error
+            // เพราะฟังก์ชันนี้จะถูกเรียก
+            // ทุกครั้งที่ยังหา QR ไม่เจอ
+
         }
 
-    ).then(() => {
+    )
 
-        console.log("CAMERA OK");
 
-    }).catch((error) => {
+    // ==========================================
+    // CAMERA READY
+    // ==========================================
 
-        console.error("CAMERA ERROR:", error);
+    .then(() => {
 
-        errorBox.classList.remove("hidden");
+        console.log(
+            "📷 CAMERA OK"
+        );
 
-        document.getElementById("camera-error-msg").innerHTML =
+
+        window.isProcessingScan =
+            false;
+
+
+        // ======================================
+        // GET VIDEO
+        // ======================================
+
+        const video =
+            document.querySelector(
+                "#reader video"
+            );
+
+
+        if (
+            !video ||
+            !video.srcObject
+        ) {
+
+            console.log(
+                "ไม่พบ Video Track"
+            );
+
+            return;
+
+        }
+
+
+        // ======================================
+        // GET CAMERA TRACK
+        // ======================================
+
+        const track =
+            video
+                .srcObject
+                .getVideoTracks()[0];
+
+
+        if (!track) {
+
+            return;
+
+        }
+
+
+        // ======================================
+        // CAMERA CAPABILITIES
+        // ======================================
+
+        const capabilities =
+            track.getCapabilities();
+
+
+        console.log(
+            "CAMERA CAPABILITIES:",
+            capabilities
+        );
+
+
+        // ======================================
+        // CONTINUOUS AUTO FOCUS
+        // ======================================
+
+        if (
+            capabilities.focusMode &&
+            capabilities.focusMode.includes(
+                "continuous"
+            )
+        ) {
+
+            track.applyConstraints({
+
+                advanced: [
+
+                    {
+
+                        focusMode:
+                            "continuous"
+
+                    }
+
+                ]
+
+            })
+
+            .then(() => {
+
+                console.log(
+                    "🎯 CONTINUOUS AUTO FOCUS: ON"
+                );
+
+            })
+
+            .catch(error => {
+
+                console.log(
+                    "AUTO FOCUS ERROR:",
+                    error
+                );
+
+            });
+
+        }
+
+
+        // ======================================
+        // ENABLE HIGH QUALITY
+        // ======================================
+
+        if (
+            capabilities.zoom
+        ) {
+
+            console.log(
+                "ZOOM SUPPORTED:",
+                capabilities.zoom
+            );
+
+        }
+
+
+    })
+
+
+    // ==========================================
+    // CAMERA ERROR
+    // ==========================================
+
+    .catch((error) => {
+
+        console.error(
+            "CAMERA ERROR:",
+            error
+        );
+
+
+        errorBox.classList.remove(
+            "hidden"
+        );
+
+
+        document.getElementById(
+            "camera-error-msg"
+        ).innerHTML =
+
             "เปิดกล้องไม่ได้<br><br>" +
+
             "กรุณากดอนุญาตการใช้งานกล้อง<br>" +
+
             "แล้วลองใหม่อีกครั้ง";
 
     });
+
 }
 
         function switchCamera() {
@@ -403,6 +833,8 @@ html5QrCode.start(
         }
 
         function processScannedData(text) {
+
+    window.isProcessingScan = false;
             // Expected Format: Part Number,Qty,Unit,Lot Number,Serial Number
             // Example: 3DET23244818601,2000,PCS,WO-26070376,3DET23244818601B26080005
             
