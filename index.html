@@ -29,9 +29,19 @@
     background: #000;
 }
 
+#reader {
+    width: 100%;
+    max-width: 420px;
+    min-height: 420px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    position: relative;
+}
+
 #reader video {
     width: 100% !important;
-    height: auto !important;
+    height: 100% !important;
     object-fit: cover !important;
 }
         
@@ -69,7 +79,7 @@
 
     <div class="w-full max-w-md bg-white shadow-sm flex flex-col items-center py-4 px-4 sticky top-0 z-10">
         <img src="https://www.alliedmfg.co.th/wp-content/uploads/2026/07/AMS-LOGO-V1.png" alt="AMS Logo" class="h-10 object-contain mb-1">
-        <h1 class="text-lg font-semibold text-blue-900 tracking-wide">Inventory Cycle Count</h1>
+        <h1 class="text-lg font-semibold text-blue-900 tracking-wide">Inventory Cycle Count111111</h1>
     </div>
 
     <!-- Main Application Container -->
@@ -390,21 +400,57 @@
     const cameraConfig = { facingMode: "environment" };
 
     const config = {
-        fps: 10,
-        qrbox: {
-            width: 340,
-            height: 220
+    fps: 15,
+
+    qrbox: function(viewfinderWidth, viewfinderHeight) {
+
+        // ใช้พื้นที่ scan กว้างขึ้น
+        // เพื่อให้ QR ขนาดเล็กมีโอกาสถูกตรวจจับมากขึ้น
+        const minEdge = Math.min(
+            viewfinderWidth,
+            viewfinderHeight
+        );
+
+        return {
+            width: Math.floor(minEdge * 0.75),
+            height: Math.floor(minEdge * 0.75)
+        };
+    },
+
+    aspectRatio: 1.7777778,
+
+    formatsToSupport: [
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E
+    ],
+
+    useBarCodeDetectorIfSupported: true,
+
+    videoConstraints: {
+        facingMode: {
+            ideal: "environment"
         },
-        aspectRatio: 1.0,
-        // เปิดใช้ Native Barcode Detector (ช่วยให้อ่านบาร์โค้ดจางๆ ได้ดีขึ้นบน Android)
-        useBarCodeDetectorIfSupported: true,
-        // บังคับความละเอียดสูง (High Res) ช่วยให้กล้องเห็นรายละเอียด QR เล็กๆ ได้ชัด
-        videoConstraints: {
-            width: { min: 1280, ideal: 1920 },
-            height: { min: 720, ideal: 1080 },
-            facingMode: "environment"
+
+        width: {
+            ideal: 1920
+        },
+
+        height: {
+            ideal: 1080
+        },
+
+        frameRate: {
+            ideal: 30,
+            max: 30
         }
-    };
+    }
+};
 
     html5QrCode.start(
         cameraConfig,
@@ -435,18 +481,102 @@
         
         // พยายามเปิด Continuous Auto Focus ให้เลนส์พยายามโฟกัสวัตถุตรงหน้าตลอดเวลา
         try {
-            const track = html5QrCode.getRunningTrack();
-            if (track) {
-                const capabilities = track.getCapabilities();
-                if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-                    track.applyConstraints({
-                        advanced: [{ focusMode: 'continuous' }]
-                    }).catch(e => console.log("Focus constraints error", e));
-                }
-            }
-        } catch (err) {
-            console.log("Auto focus not supported", err);
+
+    const track =
+        html5QrCode.getRunningTrack();
+
+    if (track) {
+
+        const capabilities =
+            track.getCapabilities();
+
+        const advanced = [];
+
+
+        // ==========================================
+        // AUTO FOCUS
+        // ==========================================
+
+        if (
+            capabilities.focusMode &&
+            capabilities.focusMode.includes("continuous")
+        ) {
+
+            advanced.push({
+                focusMode: "continuous"
+            });
+
+            console.log(
+                "Continuous Auto Focus: ON"
+            );
         }
+
+
+        // ==========================================
+        // AUTO EXPOSURE
+        // ==========================================
+
+        if (
+            capabilities.exposureMode &&
+            capabilities.exposureMode.includes("continuous")
+        ) {
+
+            advanced.push({
+                exposureMode: "continuous"
+            });
+
+            console.log(
+                "Continuous Auto Exposure: ON"
+            );
+        }
+
+
+        // ==========================================
+        // AUTO WHITE BALANCE
+        // ==========================================
+
+        if (
+            capabilities.whiteBalanceMode &&
+            capabilities.whiteBalanceMode.includes("continuous")
+        ) {
+
+            advanced.push({
+                whiteBalanceMode: "continuous"
+            });
+
+            console.log(
+                "Continuous Auto White Balance: ON"
+            );
+        }
+
+
+        // ==========================================
+        // APPLY
+        // ==========================================
+
+        if (advanced.length > 0) {
+
+            await track.applyConstraints({
+                advanced: advanced
+            });
+
+            console.log(
+                "Camera optimization applied",
+                advanced
+            );
+
+        }
+
+    }
+
+} catch (err) {
+
+    console.log(
+        "Camera optimization not supported:",
+        err
+    );
+
+}
 
     }).catch((error) => {
 
